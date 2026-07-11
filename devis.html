@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demander un devis — Import China Store</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <button class="menu-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+  </div>
+  <div class="wrap">
+    <div class="nav-links" id="navlinks">
+      <a href="index.html">Accueil</a>
+      <a href="devis.html" class="active">Demander un devis</a>
+      <a href="commande.html">Passer commande</a>
+      <a href="suivi.html">Suivre un colis</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="avis.html">Avis clients</a>
+      <a href="contact.html">Contact</a>
+      <a href="espace-client.html">Espace Client</a>
+      <a href="admin.html">Administration</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="pagehead">
+    <div class="wrap">
+      <div class="eyebrow">Devis gratuit</div>
+      <h1>Obtenez votre <em>devis</em></h1>
+      <p>Envoyez-nous le produit qui vous intéresse, nous vous répondons sur WhatsApp sous peu.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <form id="devisForm" onsubmit="return handleDevis(event)">
+        <div id="devisFormFields">
+          <div class="form-group">
+            <label>Nom complet</label>
+            <input type="text" required placeholder="Ex : Awa Koné">
+          </div>
+          <div class="form-group">
+            <label>Numéro WhatsApp</label>
+            <input type="tel" required placeholder="+241 06 00 00 00">
+          </div>
+          <div class="form-group">
+            <label>E-mail (facultatif)</label>
+            <input type="email" placeholder="vous@exemple.com">
+          </div>
+          <div class="form-group">
+            <label>Lien du produit (Alibaba / 1688 / Taobao)</label>
+            <input type="url" required placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Quantité souhaitée</label>
+            <input type="number" required placeholder="Ex : 50">
+          </div>
+          <div class="form-group">
+            <label>Commentaire</label>
+            <textarea placeholder="Précisions utiles (couleur, taille, urgence...)"></textarea>
+          </div>
+          <button type="submit" class="btn btn-gold"><span>Envoyer ma demande</span><span class="btn-arrow">→</span></button>
+          <div class="form-note">⚡ Chaque devis envoyé génère instantanément une notification WhatsApp et un enregistrement chez Import China Store.</div>
+        </div>
+
+        <div class="confirm-box" id="devisConfirm">
+          <div class="stamp">✓</div>
+          <h2 style="font-size:19px; margin-bottom:8px;">Demande envoyée</h2>
+          <p style="color:var(--grey-light); font-size:14px;">Notre équipe vous répond sur WhatsApp très rapidement.</p>
+          <div class="order-id">DEVIS-2026-000312</div>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <div class="foot-links">
+      <a href="devis.html">Devis</a>
+      <a href="commande.html">Commande</a>
+      <a href="suivi.html">Suivi</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p class="tagline">« Offrir une expérience d'achat en Chine plus simple, plus rapide, plus transparente et plus professionnelle. »</p>
+  </div>
+</footer>
+
+<script>
+function handleDevis(e){
+  e.preventDefault();
+  document.getElementById('devisFormFields').style.display='none';
+  document.getElementById('devisConfirm').classList.add('show');
+  return false;
+}
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>

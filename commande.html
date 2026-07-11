@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passer commande — Import China Store</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <button class="menu-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+  </div>
+  <div class="wrap">
+    <div class="nav-links" id="navlinks">
+      <a href="index.html">Accueil</a>
+      <a href="devis.html">Demander un devis</a>
+      <a href="commande.html" class="active">Passer commande</a>
+      <a href="suivi.html">Suivre un colis</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="avis.html">Avis clients</a>
+      <a href="contact.html">Contact</a>
+      <a href="espace-client.html">Espace Client</a>
+      <a href="admin.html">Administration</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="pagehead">
+    <div class="wrap">
+      <div class="eyebrow">Commande directe</div>
+      <h1>Passez votre <em>commande</em></h1>
+      <p>Un numéro de commande unique vous est attribué automatiquement, à utiliser pour le suivi.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <form id="cmdForm" onsubmit="return handleCmd(event)">
+        <div id="cmdFormFields">
+          <div class="form-group">
+            <label>Nom complet</label>
+            <input type="text" required placeholder="Ex : Jean Dupont">
+          </div>
+          <div class="form-group">
+            <label>Numéro WhatsApp</label>
+            <input type="tel" required placeholder="+241 06 00 00 00">
+          </div>
+          <div class="form-group">
+            <label>Adresse de livraison</label>
+            <input type="text" required placeholder="Ville, quartier, repère">
+          </div>
+          <div class="form-group">
+            <label>Produit ou lien</label>
+            <input type="text" required placeholder="Nom du produit ou lien Alibaba/1688/Taobao">
+          </div>
+          <div class="form-group">
+            <label>Quantité</label>
+            <input type="number" required placeholder="Ex : 20">
+          </div>
+          <div class="form-group">
+            <label>Mode de transport</label>
+            <div class="radio-row">
+              <div class="radio-opt selected" onclick="selectTransport(this)" data-mode="aerien">✈️ Aérien</div>
+              <div class="radio-opt" onclick="selectTransport(this)" data-mode="maritime">🚢 Maritime</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-gold"><span>Confirmer la commande</span><span class="btn-arrow">→</span></button>
+          <div class="form-note">⚡ Vous recevez immédiatement votre numéro de commande par WhatsApp et e-mail.</div>
+        </div>
+
+        <div class="confirm-box" id="cmdConfirm">
+          <div class="stamp">✓</div>
+          <h2 style="font-size:19px; margin-bottom:8px;">Commande confirmée</h2>
+          <p style="color:var(--grey-light); font-size:14px;">Utilisez ce numéro pour suivre votre colis à tout moment.</p>
+          <div class="order-id">ICS-2026-000146</div>
+          <div style="margin-top:20px;">
+            <a href="suivi.html" class="btn btn-ghost"><span>Suivre ma commande</span><span class="btn-arrow">→</span></a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <div class="foot-links">
+      <a href="devis.html">Devis</a>
+      <a href="commande.html">Commande</a>
+      <a href="suivi.html">Suivi</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p class="tagline">« Offrir une expérience d'achat en Chine plus simple, plus rapide, plus transparente et plus professionnelle. »</p>
+  </div>
+</footer>
+
+<script>
+function selectTransport(el){
+  document.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function handleCmd(e){
+  e.preventDefault();
+  document.getElementById('cmdFormFields').style.display='none';
+  document.getElementById('cmdConfirm').classList.add('show');
+  return false;
+}
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>

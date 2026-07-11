@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivre un colis — Import China Store</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <button class="menu-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+  </div>
+  <div class="wrap">
+    <div class="nav-links" id="navlinks">
+      <a href="index.html">Accueil</a>
+      <a href="devis.html">Demander un devis</a>
+      <a href="commande.html">Passer commande</a>
+      <a href="suivi.html" class="active">Suivre un colis</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="avis.html">Avis clients</a>
+      <a href="contact.html">Contact</a>
+      <a href="espace-client.html">Espace Client</a>
+      <a href="admin.html">Administration</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="pagehead">
+    <div class="wrap">
+      <div class="eyebrow">Manifeste de suivi</div>
+      <h1>Où en est <em>votre colis</em> ?</h1>
+      <p>Entrez votre numéro de commande pour voir la progression en temps réel.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="card tracker-card">
+        <div class="tracker-input-row">
+          <input class="tracker-input mono" id="trackInput" placeholder="ICS-2026-000145" value="ICS-2026-000145">
+          <button class="tracker-btn" onclick="track()">Suivre</button>
+        </div>
+        <div id="trackResult">
+          <div class="tracker-meta">
+            <span>Client : <strong>J. Dupont</strong></span>
+            <span>Aérien ✈️</span>
+          </div>
+          <div class="stamp-line">
+            <div class="stamp-track"></div>
+            <div class="stamp-fill" style="height:58%;"></div>
+            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Devis envoyé</div></div>
+            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Paiement reçu</div></div>
+            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Produit acheté</div></div>
+            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Contrôle qualité</div></div>
+            <div class="stamp-step current"><div class="stamp-dot">●</div><div class="stamp-label">En transit</div></div>
+            <div class="stamp-step"><div class="stamp-dot">·</div><div class="stamp-label">Dédouanement</div></div>
+            <div class="stamp-step"><div class="stamp-dot">·</div><div class="stamp-label">Livré</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-note" style="margin-top:16px;">📎 En production, ce champ interroge automatiquement votre base de commandes (Google Sheets via n8n) pour afficher le vrai statut.</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <div class="foot-links">
+      <a href="devis.html">Devis</a>
+      <a href="commande.html">Commande</a>
+      <a href="suivi.html">Suivi</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p class="tagline">« Offrir une expérience d'achat en Chine plus simple, plus rapide, plus transparente et plus professionnelle. »</p>
+  </div>
+</footer>
+
+<script>
+function track(){
+  const val = document.getElementById('trackInput').value.trim();
+  alert('Démo : ' + (val || 'ICS-2026-000145') + ' — en production, ceci interroge le vrai statut via n8n.');
+}
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>

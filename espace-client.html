@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Client — Import China Store</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <button class="menu-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+  </div>
+  <div class="wrap">
+    <div class="nav-links" id="navlinks">
+      <a href="index.html">Accueil</a>
+      <a href="devis.html">Demander un devis</a>
+      <a href="commande.html">Passer commande</a>
+      <a href="suivi.html">Suivre un colis</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="avis.html">Avis clients</a>
+      <a href="contact.html">Contact</a>
+      <a href="espace-client.html" class="active">Espace Client</a>
+      <a href="admin.html">Administration</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="pagehead">
+    <div class="wrap">
+      <div class="eyebrow">Espace personnel</div>
+      <h1>Votre <em>espace client</em></h1>
+      <p>Retrouvez vos commandes, devis et documents en un seul endroit.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="card" style="text-align:center; padding:32px 20px;">
+        <div class="lock-icon" style="margin:0 auto 18px;">📦</div>
+        <h2 style="font-size:19px; margin-bottom:8px;">Connexion rapide</h2>
+        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Entrez votre numéro WhatsApp pour retrouver vos commandes.</p>
+        <div class="form-group" style="text-align:left;">
+          <label>Numéro WhatsApp</label>
+          <input type="tel" placeholder="+241 06 00 00 00">
+        </div>
+        <button class="btn btn-gold" style="margin-top:6px;"><span>Voir mes commandes</span><span class="btn-arrow">→</span></button>
+        <div class="form-note" style="text-align:left; margin-top:18px;">🔐 En production, cet espace affichera la liste réelle de vos commandes, devis, documents et statuts — connectée à votre base de données.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo-row">
+      <img src="assets/logo.png" alt="Import China Store">
+      <div class="logo-text">IMPORT<br><span>CHINA STORE</span></div>
+    </a>
+    <div class="foot-links">
+      <a href="devis.html">Devis</a>
+      <a href="commande.html">Commande</a>
+      <a href="suivi.html">Suivi</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p class="tagline">« Offrir une expérience d'achat en Chine plus simple, plus rapide, plus transparente et plus professionnelle. »</p>
+  </div>
+</footer>
+
+<script src="script.js" defer></script>
+</body>
+</html>
