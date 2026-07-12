@@ -44,28 +44,21 @@
     <div class="wrap">
       <div class="card tracker-card">
         <div class="tracker-input-row">
-          <input class="tracker-input mono" id="trackInput" placeholder="ICS-2026-000145" value="ICS-2026-000145">
-          <button class="tracker-btn" onclick="track()">Suivre</button>
+          <input class="tracker-input mono" id="trackInput" placeholder="ICS-2026-000145">
+          <button class="tracker-btn" id="trackBtn" onclick="track()">Suivre</button>
         </div>
-        <div id="trackResult">
+        <div id="trackMessage" class="form-note" style="display:none;"></div>
+        <div id="trackResult" style="display:none;">
           <div class="tracker-meta">
-            <span>Client : <strong>J. Dupont</strong></span>
-            <span>Aérien ✈️</span>
+            <span>Client : <strong id="track-nom">—</strong></span>
+            <span id="track-transport">—</span>
           </div>
-          <div class="stamp-line">
+          <div class="stamp-line" id="stamp-line">
             <div class="stamp-track"></div>
-            <div class="stamp-fill" style="height:58%;"></div>
-            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Devis envoyé</div></div>
-            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Paiement reçu</div></div>
-            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Produit acheté</div></div>
-            <div class="stamp-step done"><div class="stamp-dot">✓</div><div class="stamp-label">Contrôle qualité</div></div>
-            <div class="stamp-step current"><div class="stamp-dot">●</div><div class="stamp-label">En transit</div></div>
-            <div class="stamp-step"><div class="stamp-dot">·</div><div class="stamp-label">Dédouanement</div></div>
-            <div class="stamp-step"><div class="stamp-dot">·</div><div class="stamp-label">Livré</div></div>
+            <div class="stamp-fill" id="stamp-fill" style="height:0%;"></div>
           </div>
         </div>
       </div>
-      <div class="form-note" style="margin-top:16px;">📎 En production, ce champ interroge automatiquement votre base de commandes (Google Sheets via n8n) pour afficher le vrai statut.</div>
     </div>
   </section>
 </main>
@@ -88,9 +81,108 @@
 </footer>
 
 <script>
-function track(){
-  const val = document.getElementById('trackInput').value.trim();
-  alert('Démo : ' + (val || 'ICS-2026-000145') + ' — en production, ceci interroge le vrai statut via n8n.');
+// URL du webhook n8n "Suivi Colis"
+const SUIVI_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/d8f542c4-84bb-42c8-a034-2be275a594d2";
+
+// Les 7 étapes, dans l'ordre exact utilisé dans la colonne "Statut" du Google Sheets
+const STEPS = [
+  "Commande confirmée",
+  "Paiement reçu",
+  "Produit acheté",
+  "Contrôle qualité",
+  "En transit",
+  "Dédouanement",
+  "Livré"
+];
+
+const TRANSPORT_ICONS = { aerien: "✈️ Aérien", maritime: "🚢 Maritime" };
+
+function showMessage(text, isError){
+  const box = document.getElementById('trackMessage');
+  box.textContent = text;
+  box.style.display = 'flex';
+  box.style.borderColor = isError ? '#8a3a3a' : 'var(--line)';
+  box.style.color = isError ? '#e0a0a0' : 'var(--grey)';
+  document.getElementById('trackResult').style.display = 'none';
+}
+
+function renderTracker(nom, statut, transport){
+  document.getElementById('trackMessage').style.display = 'none';
+  document.getElementById('trackResult').style.display = 'block';
+  document.getElementById('track-nom').textContent = nom || '—';
+  document.getElementById('track-transport').textContent = TRANSPORT_ICONS[transport] || transport || '—';
+
+  const idx = STEPS.indexOf(statut);
+  const activeIdx = idx === -1 ? 0 : idx;
+
+  const line = document.getElementById('stamp-line');
+  // remove previously rendered steps (keep .stamp-track and .stamp-fill)
+  line.querySelectorAll('.stamp-step').forEach(el => el.remove());
+
+  STEPS.forEach(function(label, i){
+    const div = document.createElement('div');
+    let cls = 'stamp-step';
+    let dot = '·';
+    if(i < activeIdx){ cls += ' done'; dot = '✓'; }
+    else if(i === activeIdx){ cls += ' current'; dot = '●'; }
+    div.className = cls;
+    div.innerHTML = '<div class="stamp-dot">' + dot + '</div><div class="stamp-label">' + label + '</div>';
+    line.appendChild(div);
+  });
+
+  const fillPct = STEPS.length > 1 ? (activeIdx / (STEPS.length - 1)) * 100 : 0;
+  const fill = document.getElementById('stamp-fill');
+  fill.style.height = '0%';
+  requestAnimationFrame(function(){
+    setTimeout(function(){ fill.style.height = fillPct + '%'; }, 100);
+  });
+
+  if(idx === -1 && statut){
+    showMessageAfterRender("Statut inconnu (\"" + statut + "\") — contactez-nous si besoin.", false);
+  }
+}
+
+function showMessageAfterRender(text){
+  // small helper kept separate so it doesn't hide the result box
+  const box = document.getElementById('trackMessage');
+  box.textContent = text;
+  box.style.display = 'flex';
+}
+
+async function track(){
+  const numero = document.getElementById('trackInput').value.trim();
+  const btn = document.getElementById('trackBtn');
+
+  if(!numero){
+    showMessage('Entrez un numéro de commande.', true);
+    return;
+  }
+
+  btn.textContent = '...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(SUIVI_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numeroCommande: numero })
+    });
+
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    const data = await res.json();
+
+    if(!data || !data.nom){
+      showMessage("Aucune commande trouvée pour \"" + numero + "\". Vérifiez le numéro ou contactez-nous sur WhatsApp.", true);
+    } else {
+      renderTracker(data.nom, data.statut, data.transport);
+    }
+  } catch(err){
+    showMessage("⚠️ Impossible de récupérer le statut (" + err.message + "). Réessayez dans quelques secondes.", true);
+  } finally {
+    btn.textContent = 'Suivre';
+    btn.disabled = false;
+  }
 }
 </script>
 
