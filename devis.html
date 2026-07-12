@@ -46,29 +46,30 @@
         <div id="devisFormFields">
           <div class="form-group">
             <label>Nom complet</label>
-            <input type="text" required placeholder="Ex : Awa Koné">
+            <input type="text" id="d-nom" required placeholder="Ex : Awa Koné">
           </div>
           <div class="form-group">
             <label>Numéro WhatsApp</label>
-            <input type="tel" required placeholder="+241 06 00 00 00">
+            <input type="tel" id="d-whatsapp" required placeholder="+241 06 00 00 00">
           </div>
           <div class="form-group">
             <label>E-mail (facultatif)</label>
-            <input type="email" placeholder="vous@exemple.com">
+            <input type="email" id="d-email" placeholder="vous@exemple.com">
           </div>
           <div class="form-group">
             <label>Lien du produit (Alibaba / 1688 / Taobao)</label>
-            <input type="url" required placeholder="https://...">
+            <input type="url" id="d-lien" required placeholder="https://...">
           </div>
           <div class="form-group">
             <label>Quantité souhaitée</label>
-            <input type="number" required placeholder="Ex : 50">
+            <input type="number" id="d-quantite" required placeholder="Ex : 50">
           </div>
           <div class="form-group">
             <label>Commentaire</label>
-            <textarea placeholder="Précisions utiles (couleur, taille, urgence...)"></textarea>
+            <textarea id="d-commentaire" placeholder="Précisions utiles (couleur, taille, urgence...)"></textarea>
           </div>
-          <button type="submit" class="btn btn-gold"><span>Envoyer ma demande</span><span class="btn-arrow">→</span></button>
+          <button type="submit" class="btn btn-gold" id="d-submit-btn"><span>Envoyer ma demande</span><span class="btn-arrow">→</span></button>
+          <div class="form-note" id="d-error" style="display:none; border-color:#8a3a3a; color:#e0a0a0;"></div>
           <div class="form-note">⚡ Chaque devis envoyé génère instantanément une notification WhatsApp et un enregistrement chez Import China Store.</div>
         </div>
 
@@ -101,10 +102,44 @@
 </footer>
 
 <script>
-function handleDevis(e){
+// URL du webhook n8n "Devis Website" — remplace-la si tu recrées le workflow
+const DEVIS_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/69ad98d6-9a6a-42a8-9869-c1966ce762c4";
+
+async function handleDevis(e){
   e.preventDefault();
-  document.getElementById('devisFormFields').style.display='none';
-  document.getElementById('devisConfirm').classList.add('show');
+  const btn = document.getElementById('d-submit-btn');
+  const errorBox = document.getElementById('d-error');
+  errorBox.style.display = 'none';
+
+  const payload = {
+    nom: document.getElementById('d-nom').value.trim(),
+    whatsapp: document.getElementById('d-whatsapp').value.trim(),
+    email: document.getElementById('d-email').value.trim(),
+    lien: document.getElementById('d-lien').value.trim(),
+    quantite: document.getElementById('d-quantite').value.trim(),
+    commentaire: document.getElementById('d-commentaire').value.trim()
+  };
+
+  btn.querySelector('span').textContent = 'Envoi en cours...';
+  btn.style.opacity = '0.7';
+
+  try {
+    const res = await fetch(DEVIS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    document.getElementById('devisFormFields').style.display='none';
+    document.getElementById('devisConfirm').classList.add('show');
+  } catch(err){
+    errorBox.textContent = "⚠️ L'envoi a échoué (" + err.message + "). Vérifie ta connexion et réessaie, ou contacte-nous directement sur WhatsApp.";
+    errorBox.style.display = 'flex';
+    btn.querySelector('span').textContent = 'Envoyer ma demande';
+    btn.style.opacity = '1';
+  }
   return false;
 }
 </script>
