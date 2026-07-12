@@ -46,23 +46,23 @@
         <div id="cmdFormFields">
           <div class="form-group">
             <label>Nom complet</label>
-            <input type="text" required placeholder="Ex : Jean Dupont">
+            <input type="text" id="c-nom" required placeholder="Ex : Jean Dupont">
           </div>
           <div class="form-group">
             <label>Numéro WhatsApp</label>
-            <input type="tel" required placeholder="+241 06 00 00 00">
+            <input type="tel" id="c-whatsapp" required placeholder="+241 06 00 00 00">
           </div>
           <div class="form-group">
             <label>Adresse de livraison</label>
-            <input type="text" required placeholder="Ville, quartier, repère">
+            <input type="text" id="c-adresse" required placeholder="Ville, quartier, repère">
           </div>
           <div class="form-group">
             <label>Produit ou lien</label>
-            <input type="text" required placeholder="Nom du produit ou lien Alibaba/1688/Taobao">
+            <input type="text" id="c-produit" required placeholder="Nom du produit ou lien Alibaba/1688/Taobao">
           </div>
           <div class="form-group">
             <label>Quantité</label>
-            <input type="number" required placeholder="Ex : 20">
+            <input type="number" id="c-quantite" required placeholder="Ex : 20">
           </div>
           <div class="form-group">
             <label>Mode de transport</label>
@@ -71,7 +71,8 @@
               <div class="radio-opt" onclick="selectTransport(this)" data-mode="maritime">🚢 Maritime</div>
             </div>
           </div>
-          <button type="submit" class="btn btn-gold"><span>Confirmer la commande</span><span class="btn-arrow">→</span></button>
+          <button type="submit" class="btn btn-gold" id="c-submit-btn"><span>Confirmer la commande</span><span class="btn-arrow">→</span></button>
+          <div class="form-note" id="c-error" style="display:none; border-color:#8a3a3a; color:#e0a0a0;"></div>
           <div class="form-note">⚡ Vous recevez immédiatement votre numéro de commande par WhatsApp et e-mail.</div>
         </div>
 
@@ -79,7 +80,7 @@
           <div class="stamp">✓</div>
           <h2 style="font-size:19px; margin-bottom:8px;">Commande confirmée</h2>
           <p style="color:var(--grey-light); font-size:14px;">Utilisez ce numéro pour suivre votre colis à tout moment.</p>
-          <div class="order-id">ICS-2026-000146</div>
+          <div class="order-id" id="c-order-id">ICS-2026-000000</div>
           <div style="margin-top:20px;">
             <a href="suivi.html" class="btn btn-ghost"><span>Suivre ma commande</span><span class="btn-arrow">→</span></a>
           </div>
@@ -111,10 +112,50 @@ function selectTransport(el){
   document.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('selected'));
   el.classList.add('selected');
 }
-function handleCmd(e){
+
+// URL du webhook n8n "Commande Website"
+const CMD_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/ffe8e429-4535-423d-b4b3-0d53fd22d74a";
+
+async function handleCmd(e){
   e.preventDefault();
-  document.getElementById('cmdFormFields').style.display='none';
-  document.getElementById('cmdConfirm').classList.add('show');
+  const btn = document.getElementById('c-submit-btn');
+  const errorBox = document.getElementById('c-error');
+  errorBox.style.display = 'none';
+
+  const transportEl = document.querySelector('.radio-opt.selected');
+  const payload = {
+    nom: document.getElementById('c-nom').value.trim(),
+    whatsapp: document.getElementById('c-whatsapp').value.trim(),
+    adresse: document.getElementById('c-adresse').value.trim(),
+    produit: document.getElementById('c-produit').value.trim(),
+    quantite: document.getElementById('c-quantite').value.trim(),
+    transport: transportEl ? transportEl.dataset.mode : 'aerien'
+  };
+
+  btn.querySelector('span').textContent = 'Envoi en cours...';
+  btn.style.opacity = '0.7';
+
+  try {
+    const res = await fetch(CMD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    const data = await res.json();
+    const numero = (data && data.numeroCommande) ? data.numeroCommande : '—';
+
+    document.getElementById('c-order-id').textContent = numero;
+    document.getElementById('cmdFormFields').style.display='none';
+    document.getElementById('cmdConfirm').classList.add('show');
+  } catch(err){
+    errorBox.textContent = "⚠️ L'envoi a échoué (" + err.message + "). Vérifie ta connexion et réessaie, ou contacte-nous directement sur WhatsApp.";
+    errorBox.style.display = 'flex';
+    btn.querySelector('span').textContent = 'Confirmer la commande';
+    btn.style.opacity = '1';
+  }
   return false;
 }
 </script>
