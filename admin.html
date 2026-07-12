@@ -58,25 +58,14 @@
 
       <!-- PANEL (hidden until login) -->
       <div id="admin-panel" style="display:none;">
-        <div class="card" style="margin-bottom:16px;">
-          <div class="form-group" style="margin-bottom:12px;">
-            <label>Numéro de commande</label>
-            <input type="text" class="mono" id="admin-numero" placeholder="ICS-2026-000145">
-          </div>
-          <button class="btn btn-ghost" id="admin-search-btn" onclick="adminSearch()"><span>Chercher la commande</span><span class="btn-arrow">→</span></button>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Rechercher</label>
+          <input type="text" id="admin-search" placeholder="Numéro, nom, produit, statut..." oninput="renderOrders()">
         </div>
 
         <div class="form-note" id="admin-message" style="display:none;"></div>
 
-        <div class="card" id="admin-order-card" style="display:none;">
-          <div class="tracker-meta" style="margin-bottom:16px;">
-            <span>Client : <strong id="admin-nom">—</strong></span>
-            <span id="admin-transport">—</span>
-          </div>
-          <p style="font-size:12.5px; color:var(--grey); margin-bottom:10px;">Statut actuel : <strong id="admin-statut-actuel" style="color:var(--gold-bright);">—</strong></p>
-          <p style="font-size:12.5px; color:var(--grey-light); margin-bottom:10px;">Cliquez sur l'étape atteinte :</p>
-          <div id="admin-status-buttons" style="display:flex; flex-direction:column; gap:8px;"></div>
-        </div>
+        <div id="admin-list" style="display:flex; flex-direction:column; gap:12px;"></div>
       </div>
 
     </div>
@@ -104,7 +93,7 @@
 // ⚠️ Mot de passe admin — change-le ici quand tu veux, c'est visible dans le code source de la page
 const ADMIN_PASSWORD = "ICS2026admin";
 
-const SUIVI_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/d8f542c4-84bb-42c8-a034-2be275a594d2";
+const ADMIN_LIST_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/1a813341-ef7c-46cd-af28-34ab14396543";
 const ADMIN_UPDATE_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/625b41e7-bdee-4be8-9f8d-ec9b7acce6f8";
 
 const STEPS = [
@@ -119,12 +108,27 @@ const STEPS = [
 
 const TRANSPORT_ICONS = { aerien: "✈️ Aérien", maritime: "🚢 Maritime" };
 
+let allOrders = [];
+let expandedNumero = null;
+
+function normKey(s){
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function getField(item, candidate){
+  const target = normKey(candidate);
+  const keys = Object.keys(item);
+  const found = keys.find(k => normKey(k) === target);
+  return found ? item[found] : undefined;
+}
+
 function checkPassword(){
   const pw = document.getElementById('admin-pw').value;
   const errorBox = document.getElementById('admin-login-error');
   if(pw === ADMIN_PASSWORD){
     document.getElementById('admin-login').style.display = 'none';
     document.getElementById('admin-panel').style.display = 'block';
+    loadAllOrders();
   } else {
     errorBox.textContent = 'Mot de passe incorrect.';
     errorBox.style.display = 'flex';
@@ -137,62 +141,119 @@ function showAdminMessage(text, isError){
   box.style.display = 'flex';
   box.style.borderColor = isError ? '#8a3a3a' : 'var(--line)';
   box.style.color = isError ? '#e0a0a0' : 'var(--grey)';
-  document.getElementById('admin-order-card').style.display = 'none';
 }
 
-function renderStatusButtons(currentStatut, numero){
-  const container = document.getElementById('admin-status-buttons');
-  container.innerHTML = '';
-  STEPS.forEach(function(step){
-    const btn = document.createElement('button');
-    const isCurrent = step === currentStatut;
-    btn.className = 'btn ' + (isCurrent ? 'btn-gold' : 'btn-ghost');
-    btn.innerHTML = '<span>' + (isCurrent ? '● ' : '') + step + '</span>';
-    if(!isCurrent){
-      btn.onclick = function(){ updateStatus(numero, step); };
-    } else {
-      btn.disabled = true;
-      btn.style.opacity = '0.7';
-    }
-    container.appendChild(btn);
-  });
-}
-
-async function adminSearch(){
-  const numero = document.getElementById('admin-numero').value.trim();
-  const btn = document.getElementById('admin-search-btn');
-
-  if(!numero){
-    showAdminMessage('Entrez un numéro de commande.', true);
-    return;
-  }
-
-  btn.querySelector('span').textContent = 'Recherche...';
-
+async function loadAllOrders(){
+  showAdminMessage('Chargement des commandes...', false);
+  document.getElementById('admin-list').innerHTML = '';
   try {
-    const res = await fetch(SUIVI_WEBHOOK_URL, {
+    const res = await fetch(ADMIN_LIST_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ numeroCommande: numero })
+      body: JSON.stringify({})
     });
     if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
     const data = await res.json();
+    allOrders = Array.isArray(data) ? data : [];
 
-    if(!data || !data.nom){
-      showAdminMessage("Aucune commande trouvée pour \"" + numero + "\".", true);
+    if(allOrders.length === 0){
+      showAdminMessage('Aucune commande enregistrée pour le moment.', false);
     } else {
       document.getElementById('admin-message').style.display = 'none';
-      document.getElementById('admin-order-card').style.display = 'block';
-      document.getElementById('admin-nom').textContent = data.nom;
-      document.getElementById('admin-transport').textContent = TRANSPORT_ICONS[data.transport] || data.transport || '—';
-      document.getElementById('admin-statut-actuel').textContent = data.statut || '—';
-      renderStatusButtons(data.statut, numero);
     }
+    renderOrders();
   } catch(err){
-    showAdminMessage("⚠️ Erreur : " + err.message, true);
-  } finally {
-    btn.querySelector('span').textContent = 'Chercher la commande';
+    showAdminMessage("⚠️ Impossible de charger les commandes (" + err.message + ").", true);
   }
+}
+
+function renderOrders(){
+  const query = normKey(document.getElementById('admin-search').value || '');
+  const list = document.getElementById('admin-list');
+  list.innerHTML = '';
+
+  const filtered = allOrders.filter(function(item){
+    if(!query) return true;
+    const haystack = normKey([
+      getField(item, 'Numéro commande'),
+      getField(item, 'Nom'),
+      getField(item, 'Produit'),
+      getField(item, 'Statut'),
+      getField(item, 'WhatsApp')
+    ].filter(Boolean).join(' '));
+    return haystack.includes(query);
+  });
+
+  if(filtered.length === 0 && allOrders.length > 0){
+    list.innerHTML = '<div class="form-note">Aucun résultat pour cette recherche.</div>';
+    return;
+  }
+
+  filtered.forEach(function(item){
+    const numero = getField(item, 'Numéro commande') || '—';
+    const nom = getField(item, 'Nom') || '—';
+    const produit = getField(item, 'Produit') || '—';
+    const statut = getField(item, 'Statut') || '—';
+    const transport = getField(item, 'Transport');
+    const isExpanded = expandedNumero === numero;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; cursor:pointer;';
+    header.innerHTML =
+      '<div>' +
+        '<div class="mono" style="color:var(--gold-bright); font-size:13px; font-weight:600; margin-bottom:4px;">' + numero + '</div>' +
+        '<div style="font-size:13.5px; color:var(--grey-light);">' + nom + ' — ' + produit + '</div>' +
+      '</div>' +
+      '<span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(212,160,23,0.12); color:var(--gold-bright); white-space:nowrap; margin-left:10px;">' + statut + '</span>';
+    header.onclick = function(){
+      expandedNumero = isExpanded ? null : numero;
+      renderOrders();
+    };
+    card.appendChild(header);
+
+    if(isExpanded){
+      const body = document.createElement('div');
+      body.style.cssText = 'margin-top:16px; padding-top:16px; border-top:1px solid var(--line);';
+
+      if(transport){
+        const meta = document.createElement('p');
+        meta.style.cssText = 'font-size:12.5px; color:var(--grey); margin-bottom:12px;';
+        meta.textContent = TRANSPORT_ICONS[transport] || transport;
+        body.appendChild(meta);
+      }
+
+      const label = document.createElement('p');
+      label.style.cssText = 'font-size:12.5px; color:var(--grey-light); margin-bottom:10px;';
+      label.textContent = 'Cliquez sur l\'étape atteinte :';
+      body.appendChild(label);
+
+      const btnWrap = document.createElement('div');
+      btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
+      STEPS.forEach(function(step){
+        const btn = document.createElement('button');
+        const isCurrent = step === statut;
+        btn.className = 'btn ' + (isCurrent ? 'btn-gold' : 'btn-ghost');
+        btn.innerHTML = '<span>' + (isCurrent ? '● ' : '') + step + '</span>';
+        if(isCurrent){
+          btn.disabled = true;
+          btn.style.opacity = '0.7';
+        } else {
+          btn.onclick = function(e){
+            e.stopPropagation();
+            updateStatus(numero, step);
+          };
+        }
+        btnWrap.appendChild(btn);
+      });
+      body.appendChild(btnWrap);
+      card.appendChild(body);
+    }
+
+    list.appendChild(card);
+  });
 }
 
 async function updateStatus(numero, nouveauStatut){
@@ -206,8 +267,14 @@ async function updateStatus(numero, nouveauStatut){
     if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
 
     document.getElementById('admin-message').style.display = 'none';
-    document.getElementById('admin-statut-actuel').textContent = nouveauStatut;
-    renderStatusButtons(nouveauStatut, numero);
+    // update local copy so we don't need to refetch everything
+    allOrders.forEach(function(item){
+      if(getField(item, 'Numéro commande') === numero){
+        const key = Object.keys(item).find(k => normKey(k) === normKey('Statut'));
+        if(key) item[key] = nouveauStatut;
+      }
+    });
+    renderOrders();
   } catch(err){
     showAdminMessage("⚠️ La mise à jour a échoué : " + err.message, true);
   }
