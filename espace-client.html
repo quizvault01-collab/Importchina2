@@ -100,12 +100,25 @@ function resetLogin(){
   document.getElementById('ec-message').style.display = 'none';
 }
 
+function normKey(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function getField(item, candidate){
+  const target = normKey(candidate);
+  const keys = Object.keys(item);
+  const found = keys.find(k => normKey(k) === target);
+  return found ? item[found] : undefined;
+}
+
 function renderCard(item){
-  const isOrder = !!item['Numéro Commande'];
-  const title = isOrder ? item['Numéro Commande'] : 'Devis';
-  const produit = isOrder ? item['Produit'] : item['Lien Produit'];
-  const statut = item['Statut'] || '—';
-  const date = item['Date'] ? new Date(item['Date']).toLocaleDateString('fr-FR') : '—';
+  const numeroCommande = getField(item, 'Numéro Commande');
+  const isOrder = !!numeroCommande;
+  const title = isOrder ? numeroCommande : 'Devis';
+  const produit = isOrder ? getField(item, 'Produit') : getField(item, 'Lien du produit');
+  const statut = getField(item, 'Statut') || '—';
+  const rawDate = getField(item, 'Date');
+  const date = rawDate ? new Date(rawDate).toLocaleDateString('fr-FR') : '—';
 
   return '<div class="card">' +
     '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
