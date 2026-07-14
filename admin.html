@@ -95,6 +95,7 @@ const ADMIN_PASSWORD = "ICS2026admin";
 
 const ADMIN_LIST_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/1a813341-ef7c-46cd-af28-34ab14396543";
 const ADMIN_UPDATE_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/625b41e7-bdee-4be8-9f8d-ec9b7acce6f8";
+const ADMIN_KEY = "ics-admin-8f42a1c9";
 
 const STEPS = [
   "Commande confirmée",
@@ -120,6 +121,11 @@ function getField(item, candidate){
   const keys = Object.keys(item);
   const found = keys.find(k => normKey(k) === target);
   return found ? item[found] : undefined;
+}
+
+function toWaLink(numero){
+  const digits = String(numero || '').replace(/[^0-9]/g, '');
+  return digits ? 'https://wa.me/' + digits : null;
 }
 
 function checkPassword(){
@@ -149,7 +155,7 @@ async function loadAllOrders(){
   try {
     const res = await fetch(ADMIN_LIST_WEBHOOK_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body: JSON.stringify({})
     });
     if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
@@ -218,6 +224,18 @@ function renderOrders(){
       const body = document.createElement('div');
       body.style.cssText = 'margin-top:16px; padding-top:16px; border-top:1px solid var(--line);';
 
+      const whatsapp = getField(item, 'WhatsApp');
+      const waLink = toWaLink(whatsapp);
+      if(waLink){
+        const waRow = document.createElement('a');
+        waRow.href = waLink;
+        waRow.target = '_blank';
+        waRow.rel = 'noopener';
+        waRow.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gold-bright); margin-bottom:12px; text-decoration:none;';
+        waRow.innerHTML = '💬 ' + whatsapp + ' <span style="color:var(--grey); font-size:11.5px;">(ouvrir WhatsApp)</span>';
+        body.appendChild(waRow);
+      }
+
       if(transport){
         const meta = document.createElement('p');
         meta.style.cssText = 'font-size:12.5px; color:var(--grey); margin-bottom:12px;';
@@ -261,7 +279,7 @@ async function updateStatus(numero, nouveauStatut){
   try {
     const res = await fetch(ADMIN_UPDATE_WEBHOOK_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body: JSON.stringify({ numeroCommande: numero, nouveauStatut: nouveauStatut })
     });
     if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
