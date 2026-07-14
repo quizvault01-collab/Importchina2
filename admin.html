@@ -43,17 +43,26 @@
   <section class="section">
     <div class="wrap">
 
-      <!-- LOGIN -->
-      <div class="card" id="admin-login" style="text-align:center; padding:32px 20px;">
+      <!-- LOGIN : ÉTAPE 1 - demande du code -->
+      <div class="card" id="admin-login-request" style="text-align:center; padding:32px 20px;">
         <div class="lock-icon" style="margin:0 auto 18px;">🔒</div>
         <h2 style="font-size:19px; margin-bottom:8px;">Connexion sécurisée</h2>
-        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Réservé à l'équipe interne.</p>
+        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Réservé à l'équipe interne. Un code vous sera envoyé par email.</p>
+        <button class="btn btn-gold" id="admin-request-btn" onclick="requestCode()"><span>Recevoir un code</span><span class="btn-arrow">→</span></button>
+        <div class="form-note" id="admin-request-error" style="display:none; text-align:left; margin-top:18px; border-color:#8a3a3a; color:#e0a0a0;"></div>
+      </div>
+
+      <!-- LOGIN : ÉTAPE 2 - saisie du code -->
+      <div class="card" id="admin-login-verify" style="display:none; text-align:center; padding:32px 20px;">
+        <div class="lock-icon" style="margin:0 auto 18px;">📩</div>
+        <h2 style="font-size:19px; margin-bottom:8px;">Entrez le code reçu</h2>
+        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Vérifiez votre email — le code est valable 10 minutes.</p>
         <div class="form-group" style="text-align:left;">
-          <label>Mot de passe</label>
-          <input type="password" id="admin-pw" placeholder="••••••••">
+          <label>Code à 6 chiffres</label>
+          <input type="text" inputmode="numeric" maxlength="6" id="admin-otp" class="mono" placeholder="000000">
         </div>
-        <button class="btn btn-gold" style="margin-top:6px;" onclick="checkPassword()"><span>Se connecter</span><span class="btn-arrow">→</span></button>
-        <div class="form-note" id="admin-login-error" style="display:none; text-align:left; margin-top:18px; border-color:#8a3a3a; color:#e0a0a0;"></div>
+        <button class="btn btn-gold" style="margin-top:6px;" id="admin-verify-btn" onclick="verifyCode()"><span>Valider</span><span class="btn-arrow">→</span></button>
+        <div class="form-note" id="admin-verify-error" style="display:none; text-align:left; margin-top:18px; border-color:#8a3a3a; color:#e0a0a0;"></div>
       </div>
 
       <!-- PANEL (hidden until login) -->
@@ -90,9 +99,6 @@
 </footer>
 
 <script>
-// ⚠️ Mot de passe admin — change-le ici quand tu veux, c'est visible dans le code source de la page
-const ADMIN_PASSWORD = "ICS2026admin";
-
 const ADMIN_LIST_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/1a813341-ef7c-46cd-af28-34ab14396543";
 const ADMIN_UPDATE_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/625b41e7-bdee-4be8-9f8d-ec9b7acce6f8";
 const ADMIN_KEY = "ics-admin-8f42a1c9";
@@ -128,16 +134,69 @@ function toWaLink(numero){
   return digits ? 'https://wa.me/' + digits : null;
 }
 
-function checkPassword(){
-  const pw = document.getElementById('admin-pw').value;
-  const errorBox = document.getElementById('admin-login-error');
-  if(pw === ADMIN_PASSWORD){
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    loadAllOrders();
-  } else {
-    errorBox.textContent = 'Mot de passe incorrect.';
+const ADMIN_REQUEST_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/99b25500-1e16-4301-a2d3-7c0d2dfd4ca6";
+const ADMIN_VERIFY_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/976c25ad-8df5-4f99-928d-7991c62f9959";
+
+async function requestCode(){
+  const btn = document.getElementById('admin-request-btn');
+  const errorBox = document.getElementById('admin-request-error');
+  errorBox.style.display = 'none';
+  btn.querySelector('span').textContent = 'Envoi en cours...';
+
+  try {
+    const res = await fetch(ADMIN_REQUEST_CODE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    document.getElementById('admin-login-request').style.display = 'none';
+    document.getElementById('admin-login-verify').style.display = 'block';
+  } catch(err){
+    errorBox.textContent = "⚠️ Impossible d'envoyer le code (" + err.message + ").";
     errorBox.style.display = 'flex';
+  } finally {
+    btn.querySelector('span').textContent = 'Recevoir un code';
+  }
+}
+
+async function verifyCode(){
+  const code = document.getElementById('admin-otp').value.trim();
+  const btn = document.getElementById('admin-verify-btn');
+  const errorBox = document.getElementById('admin-verify-error');
+  errorBox.style.display = 'none';
+
+  if(!code){
+    errorBox.textContent = 'Entrez le code reçu par email.';
+    errorBox.style.display = 'flex';
+    return;
+  }
+
+  btn.querySelector('span').textContent = 'Vérification...';
+
+  try {
+    const res = await fetch(ADMIN_VERIFY_CODE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code })
+    });
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    const data = await res.json();
+    if(data && data.valid){
+      document.getElementById('admin-login-verify').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      loadAllOrders();
+    } else {
+      errorBox.textContent = data && data.reason === 'code expiré' ? 'Ce code a expiré, redemandez-en un.' : 'Code incorrect.';
+      errorBox.style.display = 'flex';
+    }
+  } catch(err){
+    errorBox.textContent = "⚠️ Erreur de vérification (" + err.message + ").";
+    errorBox.style.display = 'flex';
+  } finally {
+    btn.querySelector('span').textContent = 'Valider';
   }
 }
 
