@@ -53,6 +53,10 @@
             <input type="tel" id="c-whatsapp" required placeholder="+241 06 00 00 00">
           </div>
           <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="c-email" required placeholder="vous@exemple.com">
+          </div>
+          <div class="form-group">
             <label>Adresse de livraison</label>
             <input type="text" id="c-adresse" required placeholder="Ville, quartier, repère">
           </div>
@@ -126,6 +130,7 @@ async function handleCmd(e){
   const payload = {
     nom: document.getElementById('c-nom').value.trim(),
     whatsapp: document.getElementById('c-whatsapp').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
     adresse: document.getElementById('c-adresse').value.trim(),
     produit: document.getElementById('c-produit').value.trim(),
     quantite: document.getElementById('c-quantite').value.trim(),
