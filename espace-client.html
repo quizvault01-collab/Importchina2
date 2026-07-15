@@ -45,13 +45,25 @@
       <div class="card" id="loginCard" style="text-align:center; padding:32px 20px;">
         <div class="lock-icon" style="margin:0 auto 18px;">📦</div>
         <h2 style="font-size:19px; margin-bottom:8px;">Connexion rapide</h2>
-        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Entrez votre numéro WhatsApp pour retrouver vos commandes.</p>
+        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Entrez votre numéro WhatsApp — un code vous sera envoyé par email.</p>
         <div class="form-group" style="text-align:left;">
           <label>Numéro WhatsApp</label>
           <input type="tel" id="ec-whatsapp" placeholder="+241 06 00 00 00">
         </div>
-        <button class="btn btn-gold" id="ec-btn" style="margin-top:6px;" onclick="lookupClient()"><span>Voir mes commandes</span><span class="btn-arrow">→</span></button>
+        <button class="btn btn-gold" id="ec-btn" style="margin-top:6px;" onclick="requestCode()"><span>Recevoir un code</span><span class="btn-arrow">→</span></button>
         <div class="form-note" id="ec-message" style="text-align:left; margin-top:18px; display:none;"></div>
+      </div>
+
+      <div class="card" id="otpCard" style="display:none; text-align:center; padding:32px 20px;">
+        <div class="lock-icon" style="margin:0 auto 18px;">📩</div>
+        <h2 style="font-size:19px; margin-bottom:8px;">Entrez le code reçu</h2>
+        <p style="color:var(--grey); font-size:13.5px; margin-bottom:20px;">Vérifiez votre email — le code est valable 10 minutes.</p>
+        <div class="form-group" style="text-align:left;">
+          <label>Code à 6 chiffres</label>
+          <input type="text" inputmode="numeric" maxlength="6" id="ec-otp" class="mono" placeholder="000000">
+        </div>
+        <button class="btn btn-gold" id="ec-verify-btn" style="margin-top:6px;" onclick="verifyCode()"><span>Valider</span><span class="btn-arrow">→</span></button>
+        <div class="form-note" id="ec-otp-message" style="text-align:left; margin-top:18px; display:none;"></div>
       </div>
 
       <div id="ec-results" style="display:none; margin-top:16px;">
@@ -84,6 +96,10 @@
 
 <script>
 const ESPACE_CLIENT_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/f61ea031-aa57-4235-9b7c-b8b139263555";
+const REQUEST_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/47653248-7cfb-44d8-aa38-3efb98dccff2";
+const VERIFY_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/7ec9b784-c692-4525-b5ea-24419cd72e17";
+
+let pendingWhatsapp = null;
 
 function showEcMessage(text, isError){
   const box = document.getElementById('ec-message');
@@ -93,11 +109,22 @@ function showEcMessage(text, isError){
   box.style.color = isError ? '#e0a0a0' : 'var(--grey)';
 }
 
+function showOtpMessage(text, isError){
+  const box = document.getElementById('ec-otp-message');
+  box.textContent = text;
+  box.style.display = 'flex';
+  box.style.borderColor = isError ? '#8a3a3a' : 'var(--line)';
+  box.style.color = isError ? '#e0a0a0' : 'var(--grey)';
+}
+
 function resetLogin(){
   document.getElementById('ec-results').style.display = 'none';
+  document.getElementById('otpCard').style.display = 'none';
   document.getElementById('loginCard').style.display = 'block';
   document.getElementById('ec-whatsapp').value = '';
+  document.getElementById('ec-otp').value = '';
   document.getElementById('ec-message').style.display = 'none';
+  pendingWhatsapp = null;
 }
 
 function normKey(s){
@@ -130,7 +157,7 @@ function renderCard(item){
   '</div>';
 }
 
-async function lookupClient(){
+async function requestCode(){
   const whatsapp = document.getElementById('ec-whatsapp').value.trim();
   const btn = document.getElementById('ec-btn');
 
@@ -139,9 +166,66 @@ async function lookupClient(){
     return;
   }
 
-  btn.querySelector('span').textContent = 'Recherche...';
+  btn.querySelector('span').textContent = 'Envoi en cours...';
   btn.style.opacity = '0.7';
 
+  try {
+    const res = await fetch(REQUEST_CODE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ whatsapp: whatsapp })
+    });
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    const data = await res.json();
+    if(data && data.success){
+      pendingWhatsapp = whatsapp;
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('otpCard').style.display = 'block';
+    } else {
+      showEcMessage("Aucun email trouvé pour ce numéro. Contactez-nous sur WhatsApp pour vérifier votre identité.", true);
+    }
+  } catch(err){
+    showEcMessage("⚠️ Impossible d'envoyer le code (" + err.message + ").", true);
+  } finally {
+    btn.querySelector('span').textContent = 'Recevoir un code';
+    btn.style.opacity = '1';
+  }
+}
+
+async function verifyCode(){
+  const code = document.getElementById('ec-otp').value.trim();
+  const btn = document.getElementById('ec-verify-btn');
+
+  if(!code){
+    showOtpMessage('Entrez le code reçu par email.', true);
+    return;
+  }
+
+  btn.querySelector('span').textContent = 'Vérification...';
+
+  try {
+    const res = await fetch(VERIFY_CODE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code })
+    });
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    const data = await res.json();
+    if(data && data.valid){
+      await lookupClient(pendingWhatsapp);
+    } else {
+      showOtpMessage(data && data.reason === 'code expiré' ? 'Ce code a expiré, redemandez-en un.' : 'Code incorrect.', true);
+    }
+  } catch(err){
+    showOtpMessage("⚠️ Erreur de vérification (" + err.message + ").", true);
+  } finally {
+    btn.querySelector('span').textContent = 'Valider';
+  }
+}
+
+async function lookupClient(whatsapp){
   try {
     const res = await fetch(ESPACE_CLIENT_WEBHOOK_URL, {
       method: 'POST',
@@ -154,18 +238,17 @@ async function lookupClient(){
     const data = await res.json();
     const items = Array.isArray(data) ? data : [];
 
+    document.getElementById('otpCard').style.display = 'none';
+
     if(items.length === 0){
-      showEcMessage("Aucune commande ou devis trouvé pour ce numéro.", true);
+      document.getElementById('ec-results').style.display = 'block';
+      document.getElementById('ec-list').innerHTML = '<div class="form-note">Aucune commande ou devis trouvé pour ce numéro.</div>';
     } else {
       document.getElementById('ec-list').innerHTML = items.map(renderCard).join('');
-      document.getElementById('loginCard').style.display = 'none';
       document.getElementById('ec-results').style.display = 'block';
     }
   } catch(err){
-    showEcMessage("⚠️ Impossible de récupérer vos données (" + err.message + "). Réessayez dans quelques secondes.", true);
-  } finally {
-    btn.querySelector('span').textContent = 'Voir mes commandes';
-    btn.style.opacity = '1';
+    showOtpMessage("⚠️ Impossible de récupérer vos données (" + err.message + ").", true);
   }
 }
 </script>
