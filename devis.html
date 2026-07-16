@@ -68,6 +68,10 @@
             <label>Commentaire</label>
             <textarea id="d-commentaire" placeholder="Précisions utiles (couleur, taille, urgence...)"></textarea>
           </div>
+          <div class="form-group">
+            <label>Photo du produit (facultatif)</label>
+            <input type="file" id="d-photo" accept="image/*">
+          </div>
           <button type="submit" class="btn btn-gold" id="d-submit-btn"><span>Envoyer ma demande</span><span class="btn-arrow">→</span></button>
           <div class="form-note" id="d-error" style="display:none; border-color:#8a3a3a; color:#e0a0a0;"></div>
           <div class="form-note">⚡ Chaque devis envoyé génère instantanément une notification WhatsApp et un enregistrement chez Import China Store.</div>
@@ -104,6 +108,31 @@
 // URL du webhook n8n "Devis Website" — remplace-la si tu recrées le workflow
 const DEVIS_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/69ad98d6-9a6a-42a8-9869-c1966ce762c4";
 
+// Compresse une image côté téléphone avant envoi (max 1200px, qualité 0.7) pour ne pas surcharger le webhook
+function compressImage(file){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        const maxDim = 1200;
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = h * (maxDim / w); w = maxDim; }
+        else if(h > maxDim){ w = w * (maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(dataUrl.split(',')[1]); // enlève le préfixe "data:image/jpeg;base64,"
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleDevis(e){
   e.preventDefault();
   const btn = document.getElementById('d-submit-btn');
@@ -121,6 +150,16 @@ async function handleDevis(e){
 
   btn.querySelector('span').textContent = 'Envoi en cours...';
   btn.style.opacity = '0.7';
+
+  const photoFile = document.getElementById('d-photo').files[0];
+  if(photoFile){
+    try {
+      payload.photoBase64 = await compressImage(photoFile);
+      payload.photoFilename = 'devis-' + Date.now() + '.jpg';
+    } catch(e){
+      // si la compression échoue, on continue sans photo plutôt que de bloquer l'envoi
+    }
+  }
 
   try {
     const res = await fetch(DEVIS_WEBHOOK_URL, {

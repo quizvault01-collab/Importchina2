@@ -75,6 +75,10 @@
               <div class="radio-opt" onclick="selectTransport(this)" data-mode="maritime">🚢 Maritime</div>
             </div>
           </div>
+          <div class="form-group">
+            <label>Photo du produit (facultatif)</label>
+            <input type="file" id="c-photo" accept="image/*">
+          </div>
           <button type="submit" class="btn btn-gold" id="c-submit-btn"><span>Confirmer la commande</span><span class="btn-arrow">→</span></button>
           <div class="form-note" id="c-error" style="display:none; border-color:#8a3a3a; color:#e0a0a0;"></div>
           <div class="form-note">⚡ Vous recevez immédiatement votre numéro de commande par WhatsApp et e-mail.</div>
@@ -120,6 +124,31 @@ function selectTransport(el){
 // URL du webhook n8n "Commande Website"
 const CMD_WEBHOOK_URL = "https://n8n-stable-mw31.onrender.com/webhook/ffe8e429-4535-423d-b4b3-0d53fd22d74a";
 
+// Compresse une image côté téléphone avant envoi (max 1200px, qualité 0.7) pour ne pas surcharger le webhook
+function compressImage(file){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        const maxDim = 1200;
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = h * (maxDim / w); w = maxDim; }
+        else if(h > maxDim){ w = w * (maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleCmd(e){
   e.preventDefault();
   const btn = document.getElementById('c-submit-btn');
@@ -139,6 +168,16 @@ async function handleCmd(e){
 
   btn.querySelector('span').textContent = 'Envoi en cours...';
   btn.style.opacity = '0.7';
+
+  const photoFile = document.getElementById('c-photo').files[0];
+  if(photoFile){
+    try {
+      payload.photoBase64 = await compressImage(photoFile);
+      payload.photoFilename = 'commande-' + Date.now() + '.jpg';
+    } catch(e){
+      // si la compression échoue, on continue sans photo plutôt que de bloquer l'envoi
+    }
+  }
 
   try {
     const res = await fetch(CMD_WEBHOOK_URL, {

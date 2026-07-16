@@ -187,6 +187,13 @@ function toWaLink(numero){
   return digits ? 'https://wa.me/' + digits : null;
 }
 
+function driveThumbnail(url){
+  if(!url) return null;
+  const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(!match) return null;
+  return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w400';
+}
+
 const ADMIN_REQUEST_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/99b25500-1e16-4301-a2d3-7c0d2dfd4ca6";
 const ADMIN_VERIFY_CODE_URL = "https://n8n-stable-mw31.onrender.com/webhook/976c25ad-8df5-4f99-928d-7991c62f9959";
 
@@ -353,6 +360,20 @@ function renderOrders(){
         meta.style.cssText = 'font-size:12.5px; color:var(--grey); margin-bottom:12px;';
         meta.textContent = TRANSPORT_ICONS[transport] || transport;
         body.appendChild(meta);
+      }
+
+      const photoUrl = getField(item, 'Photo');
+      if(photoUrl){
+        const photoLink = document.createElement('a');
+        photoLink.href = photoUrl;
+        photoLink.target = '_blank';
+        photoLink.rel = 'noopener';
+        photoLink.style.cssText = 'display:block; margin-bottom:14px;';
+        const thumb = driveThumbnail(photoUrl);
+        photoLink.innerHTML = thumb
+          ? '<img src="' + thumb + '" style="width:100%; max-width:220px; border-radius:10px; border:1px solid var(--line); display:block;">'
+          : '<span style="font-size:13px; color:var(--gold-bright);">📎 Voir la photo du produit</span>';
+        body.appendChild(photoLink);
       }
 
       const label = document.createElement('p');
@@ -553,6 +574,20 @@ function renderDevis(){
         emailRow.style.cssText = 'font-size:12.5px; color:var(--grey); margin-bottom:12px;';
         emailRow.textContent = '✉️ ' + email;
         body.appendChild(emailRow);
+      }
+
+      const photoUrl = getField(item, 'Photo');
+      if(photoUrl){
+        const photoLink = document.createElement('a');
+        photoLink.href = photoUrl;
+        photoLink.target = '_blank';
+        photoLink.rel = 'noopener';
+        photoLink.style.cssText = 'display:block; margin-bottom:14px;';
+        const thumb = driveThumbnail(photoUrl);
+        photoLink.innerHTML = thumb
+          ? '<img src="' + thumb + '" style="width:100%; max-width:220px; border-radius:10px; border:1px solid var(--line); display:block;">'
+          : '<span style="font-size:13px; color:var(--gold-bright);">📎 Voir la photo du produit</span>';
+        body.appendChild(photoLink);
       }
 
       const label = document.createElement('p');
