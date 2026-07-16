@@ -57,6 +57,7 @@
             <div class="stamp-track"></div>
             <div class="stamp-fill" id="stamp-fill" style="height:0%;"></div>
           </div>
+          <div id="track-comment" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); font-size:13px; color:var(--grey-light);"></div>
         </div>
       </div>
     </div>
@@ -114,11 +115,19 @@ function showMessage(text, isError){
   document.getElementById('trackResult').style.display = 'none';
 }
 
-function renderTracker(nom, statut, transport){
+function renderTracker(nom, statut, transport, commentaire){
   document.getElementById('trackMessage').style.display = 'none';
   document.getElementById('trackResult').style.display = 'block';
   document.getElementById('track-nom').textContent = nom || '—';
   document.getElementById('track-transport').textContent = TRANSPORT_ICONS[transport] || transport || '—';
+
+  const commentBox = document.getElementById('track-comment');
+  if(commentaire && commentaire.trim() !== ''){
+    commentBox.textContent = '📝 ' + commentaire;
+    commentBox.style.display = 'block';
+  } else {
+    commentBox.style.display = 'none';
+  }
 
   const idx = STEPS.indexOf(statut);
   const activeIdx = idx === -1 ? 0 : idx;
@@ -183,7 +192,7 @@ async function track(){
     if(!data || !data.nom){
       showMessage("Aucune commande trouvée pour \"" + numero + "\". Vérifiez le numéro ou contactez-nous sur WhatsApp.", true);
     } else {
-      renderTracker(data.nom, data.statut, data.transport);
+      renderTracker(data.nom, data.statut, data.transport, data.commentaire);
     }
   } catch(err){
     showMessage("⚠️ Impossible de récupérer le statut (" + err.message + "). Réessayez dans quelques secondes.", true);

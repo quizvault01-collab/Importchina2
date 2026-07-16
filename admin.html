@@ -123,6 +123,7 @@ const ADMIN_LIST_DEVIS_URL = "https://n8n-stable-mw31.onrender.com/webhook/fdf8f
 const ADMIN_UPDATE_DEVIS_URL = "https://n8n-stable-mw31.onrender.com/webhook/2359704a-8ec6-4fa7-9f9f-1c465f94a6ce";
 const ADMIN_KEY = "ics-admin-8f42a1c9";
 
+const ADMIN_UPDATE_COMMENT_URL = "https://n8n-stable-mw31.onrender.com/webhook/7ec34dc9-1fb9-4e8c-b231-fafc986c8671";
 const DEVIS_STATUSES = ["Nouveau", "Contacté", "Converti en commande", "Sans suite"];
 
 let allDevis = [];
@@ -378,6 +379,29 @@ function renderOrders(){
         btnWrap.appendChild(btn);
       });
       body.appendChild(btnWrap);
+
+      const commentaireActuel = getField(item, 'Commentaire') || '';
+      const commentLabel = document.createElement('p');
+      commentLabel.style.cssText = 'font-size:12.5px; color:var(--grey-light); margin:16px 0 8px;';
+      commentLabel.textContent = 'Commentaire pour le client :';
+      body.appendChild(commentLabel);
+
+      const commentBox = document.createElement('textarea');
+      commentBox.id = 'comment-' + numero;
+      commentBox.value = commentaireActuel;
+      commentBox.placeholder = 'Ex : Colis chargé sur le prochain vol';
+      commentBox.style.cssText = 'width:100%; background:var(--black); border:1px solid var(--line); border-radius:8px; padding:10px 12px; color:var(--cream); font-family:Inter,sans-serif; font-size:13px; min-height:60px; margin-bottom:8px;';
+      body.appendChild(commentBox);
+
+      const saveCommentBtn = document.createElement('button');
+      saveCommentBtn.className = 'btn btn-ghost';
+      saveCommentBtn.innerHTML = '<span>Enregistrer le commentaire</span>';
+      saveCommentBtn.onclick = function(e){
+        e.stopPropagation();
+        updateCommentaire(numero, document.getElementById('comment-' + numero).value);
+      };
+      body.appendChild(saveCommentBtn);
+
       card.appendChild(body);
     }
 
@@ -406,6 +430,28 @@ async function updateStatus(numero, nouveauStatut){
     renderOrders();
   } catch(err){
     showAdminMessage("⚠️ La mise à jour a échoué : " + err.message, true);
+  }
+}
+
+async function updateCommentaire(numero, commentaire){
+  showAdminMessage('Enregistrement du commentaire...', false);
+  try {
+    const res = await fetch(ADMIN_UPDATE_COMMENT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body: JSON.stringify({ numeroCommande: numero, commentaire: commentaire })
+    });
+    if(!res.ok) throw new Error('Réponse serveur invalide (' + res.status + ')');
+
+    showAdminMessage('Commentaire enregistré ✓', false);
+    allOrders.forEach(function(item){
+      if(getField(item, 'Numéro commande') === numero){
+        const key = Object.keys(item).find(k => normKey(k) === normKey('Commentaire'));
+        if(key) item[key] = commentaire;
+      }
+    });
+  } catch(err){
+    showAdminMessage("⚠️ L'enregistrement a échoué : " + err.message, true);
   }
 }
 
