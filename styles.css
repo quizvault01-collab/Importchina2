@@ -22,7 +22,58 @@ body{
 h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:-0.01em; }
 .mono{ font-family:'IBM Plex Mono',monospace; }
 a{ color:inherit; text-decoration:none; }
-.wrap{ max-width:560px; margin:0 auto; padding:0 20px; }
+.wrap{ max-width:640px; margin:0 auto; padding:0 20px; }
+
+/* ============ RESPONSIVE (tablette / PC) ============ */
+@media (min-width: 820px){
+  .wrap{ max-width:760px; }
+
+  .menu-toggle{ display:none; }
+  .nav-links{
+    display:flex !important;
+    flex-direction:row !important;
+    max-height:none !important;
+    opacity:1 !important;
+    margin-top:0 !important;
+    padding-top:0 !important;
+    border-top:none !important;
+    gap:24px;
+  }
+  .nav-links a{
+    border-bottom:none !important;
+    padding:0 !important;
+    font-size:13.5px;
+  }
+  .nav-links a.active{ border-bottom:2px solid var(--gold-bright) !important; padding-bottom:4px !important; }
+  nav .wrap:last-child{ margin-top:0; }
+
+  .hero{ padding:72px 0 56px; }
+  .hero-actions{ flex-direction:row; }
+  .btn-row{ flex-direction:row; }
+
+  .service-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .review-scroll{ display:grid; grid-template-columns:repeat(2,1fr); overflow:visible; margin:0; padding:0; }
+  .review-card{ min-width:0; }
+
+  .portal-grid, #espaces .wrap > div[style]{ }
+}
+
+@media (min-width: 1080px){
+  .wrap{ max-width:920px; }
+  .service-grid{ grid-template-columns:repeat(4,1fr); }
+  .review-scroll{ grid-template-columns:repeat(3,1fr); }
+}
+
+/* Forms, trackers, and standalone cards stay a comfortable reading width even on wide screens
+   (only targets direct children of .wrap so grid-nested cards like services/reviews are unaffected) */
+@media (min-width: 820px){
+  .wrap > form,
+  .wrap > .card{
+    max-width:560px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
 main{ min-height:60vh; }
 
 /* NAV */
